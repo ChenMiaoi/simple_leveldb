@@ -1,3 +1,7 @@
+# My Self
+.cache
+build
+
 # Prerequisites
 *.d
 

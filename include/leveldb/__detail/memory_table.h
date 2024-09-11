@@ -1,0 +1,11 @@
+#ifndef STORAGE_SIMPEL_LEVELDB_INCLUDE_DETAIL_MEMORY_TABLE_H
+#define STORAGE_SIMPEL_LEVELDB_INCLUDE_DETAIL_MEMORY_TABLE_H
+
+namespace simple_leveldb {
+
+	class mem_table {
+	};
+
+}// namespace simple_leveldb
+
+#endif//! STORAGE_SIMPEL_LEVELDB_INCLUDE_DETAIL_MEMORY_TABLE_H
