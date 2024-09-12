@@ -1,10 +1,10 @@
 #ifndef STORAGE_SIMPEL_LEVELDB_INCLUDE_OPTIONS_H
 #define STORAGE_SIMPEL_LEVELDB_INCLUDE_OPTIONS_H
 
-namespace simple_leveldb {
+#include "leveldb/comparator.h"
+#include "leveldb/env.h"
 
-	class Comparator;
-	class env;
+namespace simple_leveldb {
 
 	// Options to control the behavior of a database (passed to DB::Open)
 	struct options {
@@ -20,7 +20,7 @@ namespace simple_leveldb {
 		// REQUIRES: The client must ensure that the comparator supplied
 		// here has the same name and orders keys *exactly* the same as the
 		// comparator provided to previous open calls on the same DB.
-		const Comparator* comparator;
+		const comparator* comparator;
 
 		// If true, the database will be created if it is missing.
 		bool create_if_missing = false;
@@ -39,6 +39,8 @@ namespace simple_leveldb {
 		// e.g. to read/write files, schedule background work, etc.
 		// Default: Env::Default()
 		env* env;
+
+		logger* info_log = nullptr;
 	};
 
 	struct write_options {

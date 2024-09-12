@@ -29,6 +29,8 @@ namespace simple_leveldb {
 	public:
 		// Store the mapping "key->value" in the database.
 		void Put( const slice& key, const slice& value );
+
+		void Clear();
 	};
 
 }// namespace simple_leveldb
