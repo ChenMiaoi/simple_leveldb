@@ -1,7 +1,9 @@
 #include "leveldb/status.h"
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
+#include <string>
 
 namespace simple_leveldb {
 
@@ -30,6 +32,45 @@ namespace simple_leveldb {
 			::memcpy( result + 7 + len1, msg2.data(), len2 );
 		}
 		state_ = result;
+	}
+
+	core::string status::to_string() const {
+		if ( state_ == nullptr ) {
+			return "OK";
+		} else {
+			char        tmp[ 30 ];
+			const char* type;
+			switch ( code() ) {
+				case code::kOk:
+					type = "OK";
+					break;
+				case code::kNotFound:
+					type = "NotFound: ";
+					break;
+				case code::kCorruption:
+					type = "Corruption: ";
+					break;
+				case code::kNotSupported:
+					type = "Not Implemented: ";
+					break;
+				case code::kInvalidArgument:
+					type = "Invalid Argument: ";
+					break;
+				case code::kIOError:
+					type = "IO Error: ";
+					break;
+				default:
+					core::snprintf( tmp, sizeof tmp,
+													"Unknown code(%d): ", static_cast< int32_t >( code() ) );
+					break;
+			}
+
+			core::string result( type );
+			uint32_t     length;
+			core::memcpy( &length, state_, sizeof length );
+			result.append( state_ + 5, length );
+			return result;
+		}
 	}
 
 }// namespace simple_leveldb

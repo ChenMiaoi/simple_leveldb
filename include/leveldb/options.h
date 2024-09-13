@@ -3,6 +3,7 @@
 
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
+#include "leveldb/filter_policy.h"
 
 namespace simple_leveldb {
 
@@ -41,6 +42,10 @@ namespace simple_leveldb {
 		env* env;
 
 		logger* info_log = nullptr;
+
+		int32_t max_open_files = 1000;
+
+		const filter_policy* filter_policy = nullptr;
 	};
 
 	struct write_options {

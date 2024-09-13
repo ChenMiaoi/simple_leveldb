@@ -1,4 +1,3 @@
-#include "leveldb/__detail/coding.h"
 #include "leveldb/__detail/db_format.h"
 #include "leveldb/__detail/write_batch_internal.h"
 

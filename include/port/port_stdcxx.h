@@ -53,6 +53,18 @@ namespace simple_leveldb::port {
 		void signal_all() { cv_.notify_all(); }
 	};
 
+	inline uint32_t AcceleratedCRC32C( uint32_t crc, const char* buf, size_t size ) {
+#if HAVE_CRC32C
+		return ::crc32c::Extend( crc, reinterpret_cast< const uint8_t* >( buf ), size );
+#else
+		// Silence compiler warnings about unused arguments.
+		(void) crc;
+		(void) buf;
+		(void) size;
+		return 0;
+#endif// HAVE_CRC32C
+	}
+
 }// namespace simple_leveldb::port
 
 #endif//! STORAGE_SIMPEL_LEVELDB_PORT_STDCXX_H

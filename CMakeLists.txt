@@ -4,7 +4,15 @@ project(simple_leveldb VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED true) 
 
-set(CMAKE_CXX_COMPILE_FLAGS "-Werror -O2 -g -pedantic -Wconversion -Wfloat-conversion -Wsign-conversion")
+# set(CMAKE_CXX_COMPILE_FLAGS "-Werror -O2 -g -pedantic -Wconversion -Wfloat-conversion -Wsign-conversion")
+
+if (WIN32)
+  set(SIMPLE_LEVELDB_PLATFORM_NAME SIMPLE_LEVELDB_PLATFORM_WINDOWS)
+  # TODO(cmumford): Make UNICODE configurable for Windows.
+  add_definitions(-D_UNICODE -DUNICODE)
+else (WIN32)
+  set(SIMPLE_LEVELDB_PLATFORM_NAME SIMPLE_LEVELDB_PLATFORM_POSIX)
+endif (WIN32)
 
 file(GLOB_RECURSE  LEVELDB_HEADERS ${CMAKE_SOURCE_DIR}/include/leveldb/*.h)
 file(GLOB PORT_HEADERS ${CMAKE_SOURCE_DIR}/include/port/*.h)
@@ -34,3 +42,7 @@ add_executable(simple_leveldb main.cc
   ${CMAKE_SOURCE_DIR}/include/port/port_config.h
 )
 
+target_compile_definitions(simple_leveldb
+  PRIVATE
+  ${SIMPLE_LEVELDB_PLATFORM_NAME}=1
+)

@@ -1,8 +1,8 @@
-#include "leveldb/__detail/coding.h"
 #include "leveldb/__detail/db_format.h"
 #include "leveldb/__detail/write_batch_internal.h"
 #include "leveldb/slice.h"
 #include "leveldb/write_batch.h"
+#include "util/coding.h"
 #include <cstddef>
 
 // WriteBatch::rep_ :=

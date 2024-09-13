@@ -1,4 +1,4 @@
-#include "leveldb/__detail/coding.h"
+#include "util/coding.h"
 #include <cstdint>
 
 namespace simple_leveldb {
@@ -18,6 +18,12 @@ namespace simple_leveldb {
 	void put_varint32( core::string* dst, uint32_t value ) {
 		char  buf[ 5 ];
 		char* ptr = encode_varint32( buf, value );
+		dst->append( buf, ptr - buf );
+	}
+
+	void put_varint64( core::string* dst, uint64_t value ) {
+		char  buf[ 10 ];
+		char* ptr = encode_varint64( buf, value );
 		dst->append( buf, ptr - buf );
 	}
 
@@ -68,6 +74,17 @@ namespace simple_leveldb {
 			*( ptr++ ) = ( value >> 21 ) | B;
 			*( ptr++ ) = value >> 28;
 		}
+		return reinterpret_cast< char* >( ptr );
+	}
+
+	char* encode_varint64( char* dst, uint64_t v ) {
+		static const int B   = 128;
+		uint8_t*         ptr = reinterpret_cast< uint8_t* >( dst );
+		while ( v >= B ) {
+			*( ptr++ ) = v | B;
+			v >>= 7;
+		}
+		*( ptr++ ) = static_cast< uint8_t >( v );
 		return reinterpret_cast< char* >( ptr );
 	}
 

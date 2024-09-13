@@ -1,12 +1,12 @@
 #ifndef STORAGE_SIMPEL_LEVELDB_INCLUDE_DETAIL_WRITE_BATCH_H
 #define STORAGE_SIMPEL_LEVELDB_INCLUDE_DETAIL_WRITE_BATCH_H
 
-#include "coding.h"
 #include "db_format.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include "leveldb/write_batch.h"
 #include "memory_table.h"
+#include "util/coding.h"
 
 #include <cstddef>
 #include <cstdint>

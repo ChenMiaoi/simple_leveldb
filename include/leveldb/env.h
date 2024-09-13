@@ -96,6 +96,15 @@ namespace simple_leveldb {
 		VIRTUAL_DEFAULT_DISABLE_COPY( file_lock );
 	};
 
+	void Log( logger* info_log, const char* format, ... )
+#if defined( __GNUC__ ) || defined( __clang__ )
+		__attribute__( ( __format__( __printf__, 2, 3 ) ) )
+#endif
+		;
+
+	status write_string_to_file( env* env, const slice& data, const core::string& fname );
+	status write_string_to_file_sync( env* env, const slice& data, const core::string& fname );
+
 	class env_wrapper : public env {
 	private:
 		env* target_;
