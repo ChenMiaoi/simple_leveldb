@@ -24,6 +24,12 @@ namespace simple_leveldb::log {
 		init_type_crc( type_crc_ );
 	}
 
+	writer::writer( writable_file* dest, uint64_t dest_length )
+			: dest_( dest )
+			, block_offset_( dest_length % kBlockSize ) {
+		init_type_crc( type_crc_ );
+	}
+
 	writer::~writer() = default;
 
 	status writer::add_record( const slice& sle ) {

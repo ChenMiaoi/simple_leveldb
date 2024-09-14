@@ -2,6 +2,7 @@
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include <cstdarg>
+#include <cstdint>
 #include <string>
 
 namespace simple_leveldb {
@@ -49,6 +50,31 @@ namespace simple_leveldb {
 		if ( !s.is_ok() ) {
 			env->remove_file( fname );
 		}
+		return s;
+	}
+
+	status read_file_to_string( env* env, const core::string& fname, core::string* data ) {
+		data->clear();
+		sequential_file* file;
+		status           s = env->new_sequential_file( fname, &file );
+		if ( !s.is_ok() ) {
+			return s;
+		}
+		static const int32_t kBufferSize = 8192;
+		char*                space       = new char[ kBufferSize ];
+		while ( true ) {
+			slice fragment;
+			s = file->read( kBufferSize, &fragment, space );
+			if ( !s.is_ok() ) {
+				break;
+			}
+			data->append( fragment.data(), fragment.size() );
+			if ( fragment.empty() ) {
+				break;
+			}
+		}
+		delete[] space;
+		delete file;
 		return s;
 	}
 

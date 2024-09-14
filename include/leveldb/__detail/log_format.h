@@ -6,7 +6,7 @@
 
 namespace simple_leveldb::log {
 
-	enum class record_type : int32_t {
+	enum record_type : int32_t {
 		kZeroType = 0,
 		kFullType,
 		kFirstType,

@@ -23,7 +23,7 @@ namespace simple_leveldb {
 
 	class db {
 	public:
-		static status open( const options& options, const core::string& name, db** dbptr );
+		static status Open( const options& options, const core::string& name, db** dbptr );
 
 		db()                       = default;
 		db( const db& )            = delete;

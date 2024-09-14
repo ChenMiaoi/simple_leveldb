@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <set>
 #include <string>
+#include <sys/types.h>
 #include <utility>
 #include <vector>
 namespace simple_leveldb {
@@ -59,9 +60,14 @@ namespace simple_leveldb {
 		void set_prev_log_number( uint64_t num );
 		void set_next_file( uint64_t num );
 		void set_last_sequence( sequence_number seq );
+		void set_compact_pointer( int32_t level, const internal_key& key );
 
 		void   encode_to( core::string* dst ) const;
 		status decode_from( const slice& src );
+
+		void add_file( int32_t level, uint64_t file, uint64_t file_size,
+									 const internal_key& smallest, const internal_key& largest );
+		void remove_file( int32_t level, uint64_t file );
 	};
 
 }// namespace simple_leveldb

@@ -1,3 +1,4 @@
+#include "leveldb/slice.h"
 #include "util/coding.h"
 #include <cstdint>
 
@@ -25,6 +26,57 @@ namespace simple_leveldb {
 		char  buf[ 10 ];
 		char* ptr = encode_varint64( buf, value );
 		dst->append( buf, ptr - buf );
+	}
+
+	bool get_varint32( slice* input, uint32_t* value ) {
+		const char* p     = input->data();
+		const char* limit = p + input->size();
+		const char* q     = get_varint32ptr( p, limit, value );
+		if ( q == nullptr ) {
+			return false;
+		} else {
+			*input = slice( q, limit - q );
+			return true;
+		}
+	}
+
+	bool get_varint64( slice* input, uint64_t* value ) {
+		const char* p     = input->data();
+		const char* limit = p + input->size();
+		const char* q     = get_varint64ptr( p, limit, value );
+		if ( q == nullptr ) {
+			return false;
+		} else {
+			*input = slice( q, limit - q );
+			return true;
+		}
+	}
+
+	inline const char* get_varint32ptr( const char* p, const char* limit, uint32_t* value ) {
+		if ( p < limit ) {
+			uint32_t result = *( reinterpret_cast< const uint8_t* >( p ) );
+			if ( ( result & 128 ) == 0 ) {
+				*value = result;
+				return p + 1;
+			}
+		}
+		return get_varint32ptr_fallback( p, limit, value );
+	}
+
+	const char* get_varint64ptr( const char* p, const char* limit, uint64_t* value ) {
+		uint64_t result = 0;
+		for ( uint32_t shift = 0; shift <= 63 && p < limit; shift += 7 ) {
+			uint64_t byte = *( reinterpret_cast< const uint8_t* >( p ) );
+			p++;
+			if ( byte & 128 ) {
+				result |= ( ( byte & 127 ) << shift );
+			} else {
+				result |= ( byte << shift );
+				*value = result;
+				return reinterpret_cast< const char* >( p );
+			}
+		}
+		return nullptr;
 	}
 
 	inline void encode_fixed32( char* dst, uint32_t value ) {
@@ -88,9 +140,35 @@ namespace simple_leveldb {
 		return reinterpret_cast< char* >( ptr );
 	}
 
-	void put_length_prefixd_slice( core::string* dst, const slice& value ) {
+	void put_length_prefixed_slice( core::string* dst, const slice& value ) {
 		put_varint32( dst, value.size() );
 		dst->append( value.data(), value.size() );
+	}
+
+	bool get_length_prefixed_slice( slice* input, slice* result ) {
+		if ( uint32_t len; get_varint32( input, &len ) && input->size() >= len ) {
+			*result = slice( input->data(), len );
+			input->remove_prefix( len );
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	const char* get_varint32ptr_fallback( const char* p, const char* limit, uint32_t* value ) {
+		uint32_t result = 0;
+		for ( uint32_t shift = 0; shift <= 28 && p < limit; shift += 7 ) {
+			uint32_t byte = *( reinterpret_cast< const uint8_t* >( p ) );
+			p++;
+			if ( byte & 128 ) {
+				result |= ( ( byte & 127 ) << shift );
+			} else {
+				result |= ( byte << shift );
+				*value = result;
+				return reinterpret_cast< const char* >( p );
+			}
+		}
+		return nullptr;
 	}
 
 }// namespace simple_leveldb

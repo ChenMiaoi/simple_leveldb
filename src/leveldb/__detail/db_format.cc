@@ -60,9 +60,30 @@ namespace simple_leveldb {
 		}
 	}
 
+	const char* internal_filter_policy::name() const {
+		return user_policy_->name();
+	}
+
+	void internal_filter_policy::create_filter( const slice* keys, int32_t n, core::string& dst ) const {
+		slice* mkey = const_cast< slice* >( keys );
+		for ( int32_t i = 0; i < n; i++ ) {
+			mkey[ i ] = extract_user_key( keys[ i ] );
+		}
+		user_policy_->create_filter( keys, n, dst );
+	}
+
+	bool internal_filter_policy::key_may_match( const slice& key, const slice& filter ) const {
+		return user_policy_->key_may_match( extract_user_key( key ), filter );
+	}
+
 	slice internal_key::encode() const {
 		assert( !rep_.empty() );
 		return rep_;
+	}
+
+	bool internal_key::decode_from( const slice& s ) {
+		rep_.assign( s.data(), s.size() );
+		return !rep_.empty();
 	}
 
 }// namespace simple_leveldb

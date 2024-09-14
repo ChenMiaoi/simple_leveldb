@@ -24,8 +24,8 @@ namespace simple_leveldb {
 	void write_batch::Put( const slice& key, const slice& value ) {
 		write_batch_internal::set_count( this, write_batch_internal::count( this ) );
 		rep_.push_back( static_cast< char >( value_type::kTypeValue ) );
-		put_length_prefixd_slice( &rep_, key );
-		put_length_prefixd_slice( &rep_, value );
+		put_length_prefixed_slice( &rep_, key );
+		put_length_prefixed_slice( &rep_, value );
 	}
 
 	static const size_t kHeader = 12;

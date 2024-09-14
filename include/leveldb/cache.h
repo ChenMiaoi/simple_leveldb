@@ -22,12 +22,12 @@ namespace simple_leveldb {
 	public:
 		struct handle {};
 		virtual handle*  insert( const slice& key, void* value, size_t charge,
-														 core::function< void( const slice& key, void* value ) >&& deleter ) = 0;
-		virtual handle*  look_up( const slice& key )                                                 = 0;
-		virtual void     release( handle* handle )                                                   = 0;
-		virtual void*    value( handle* handle )                                                     = 0;
-		virtual void     erase( const slice& key )                                                   = 0;
-		virtual uint64_t new_id()                                                                    = 0;
+														 core::function< void( const slice& key, void* value ) > deleter ) = 0;
+		virtual handle*  look_up( const slice& key )                                               = 0;
+		virtual void     release( handle* handle )                                                 = 0;
+		virtual void*    value( handle* handle )                                                   = 0;
+		virtual void     erase( const slice& key )                                                 = 0;
+		virtual uint64_t new_id()                                                                  = 0;
 		virtual void     prune() {}
 		virtual size_t   total_charge() const = 0;
 	};

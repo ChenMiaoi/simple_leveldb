@@ -1,9 +1,11 @@
 #include "leveldb/__detail/filename.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
+#include "util/logging.h"
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 namespace simple_leveldb {
@@ -33,6 +35,10 @@ namespace simple_leveldb {
 		return dbname + buf;
 	}
 
+	core::string lock_file_name( const core::string& dbname ) {
+		return dbname + "/LOCK";
+	}
+
 	core::string current_file_name( const core::string& dbname ) {
 		return dbname + "/CURRENT";
 	}
@@ -40,6 +46,14 @@ namespace simple_leveldb {
 	core::string temp_file_name( const core::string& dbname, uint64_t number ) {
 		assert( number > 0 );
 		return make_file_name( dbname, number, "dbtmp" );
+	}
+
+	core::string info_log_file_name( const core::string& dbname ) {
+		return dbname + "/LOG";
+	}
+
+	core::string old_info_log_file_name( const core::string& dbname ) {
+		return dbname + "/LOG.old";
 	}
 
 	status set_current_file( env* env, const core::string& dbname, uint64_t descriptor_number ) {
@@ -56,6 +70,48 @@ namespace simple_leveldb {
 			env->remove_file( tmp );
 		}
 		return s;
+	}
+
+	bool parse_file_name( const core::string& filename, uint64_t* number, file_type* type ) {
+		slice rest( filename );
+		if ( rest == "CURRENT" ) {
+			*number = 0;
+			*type   = file_type::kCurrentFile;
+		} else if ( rest == "LOCK" ) {
+			*number = 0;
+			*type   = file_type::kDBLockFile;
+		} else if ( rest == "LOG" || rest == "LOG.old" ) {
+			*number = 0;
+			*type   = file_type::kInfoLogFile;
+		} else if ( rest.starts_with( "MANIFEST-" ) ) {
+			rest.remove_prefix( strlen( "MANIFEST-" ) );
+			uint64_t num;
+			if ( !consume_decimal_number( &rest, &num ) ) {
+				return false;
+			}
+			if ( !rest.empty() ) {
+				return false;
+			}
+			*type   = file_type::kDescriptorFile;
+			*number = num;
+		} else {
+			uint64_t num;
+			if ( !consume_decimal_number( &rest, &num ) ) {
+				return false;
+			}
+			slice suffix = rest;
+			if ( suffix == slice( ".log" ) ) {
+				*type = file_type::kLogFile;
+			} else if ( suffix == ".sst" || suffix == ".ldb" ) {
+				*type = file_type::kTableFile;
+			} else if ( suffix == ".dbtmp" ) {
+				*type = file_type::kTempFile;
+			} else {
+				return false;
+			}
+			*number = num;
+		}
+		return true;
 	}
 
 }// namespace simple_leveldb

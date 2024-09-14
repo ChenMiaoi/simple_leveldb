@@ -5,10 +5,13 @@
 #include "leveldb/__detail/version_edit.h"
 #include "leveldb/env.h"
 #include "leveldb/options.h"
+#include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include "port/port_stdcxx.h"
+#include <cstddef>
 #include <cstdint>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace simple_leveldb {
@@ -19,6 +22,7 @@ namespace simple_leveldb {
 
 	class version_set;
 	class table_cache;
+	class compaction;
 	class internal_key_comparator;
 
 	class version {
@@ -74,6 +78,12 @@ namespace simple_leveldb {
 		std::string compact_pointer_[ config::kNumLevels ];
 
 	public:
+		struct level_summary_storage {
+			char buffer[ 100 ];
+		};
+		const char* level_summary( level_summary_storage* scratch ) const;
+
+	public:
 		version_set( const core::string& dbname, const options* option,
 								 table_cache* table_cache, const internal_key_comparator* );
 		version_set( const version_set& )            = delete;
@@ -89,17 +99,56 @@ namespace simple_leveldb {
 		uint64_t last_sequence() const { return last_sequence_; }
 		uint64_t manifest_file_number() const { return manifest_file_number_; }
 
-		void set_last_sequence( uint64_t );
-
-		void add_live_files( core::set< uint64_t >* live );
-		void mark_file_number_used( uint64_t number );
+		void        set_last_sequence( uint64_t );
+		void        add_live_files( core::set< uint64_t >* live );
+		void        mark_file_number_used( uint64_t number );
+		bool        needs_compaction() const;
+		compaction* pick_compaction();
+		compaction* compact_range( int32_t level, const internal_key* begin, const internal_key* end );
 
 	private:
 		class builder;
 
+		bool   reuse_manifest( const core::string& dscname, const core::string& dscbase );
 		void   finalize( version* v );
 		status write_snap_shot( log::writer* log );
 		void   append_version( version* v );
+	};
+
+	class compaction {
+		friend class verison;
+		friend class version_set;
+
+	private:
+		int32_t      level_;
+		uint64_t     max_output_file_size_;
+		version*     input_version_;
+		version_edit edit_;
+
+		core::vector< file_meta_data* > input_[ 2 ];
+		core::vector< file_meta_data* > grandparents_;
+		size_t                          grandparent_index_;
+		bool                            seen_key_;
+		int64_t                         overlapped_bytes_;
+		size_t                          level_ptrs[ config::kNumLevels ];
+
+	private:
+		compaction( const options* options, int32_t level );
+
+	public:
+		~compaction();
+
+	public:
+		int32_t         level() const;
+		version_edit*   edit();
+		int32_t         num_input_files( int32_t which ) const;
+		file_meta_data* input( int32_t which, int32_t i ) const;
+		uint64_t        max_output_file_size() const;
+		bool            is_trivial_move() const;
+		void            add_input_deletions( version_edit* edit );
+		bool            is_base_level_for_key( const slice& user_key );
+		bool            should_stop_before( const slice& internal_key );
+		void            release_inputs();
 	};
 }// namespace simple_leveldb
 

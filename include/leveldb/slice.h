@@ -86,6 +86,26 @@ namespace simple_leveldb {
 		size_t      size_;
 	};
 
+	inline bool operator==( const slice& x, const slice& y ) {
+		return ( ( x.size() == y.size() ) &&
+						 ( memcmp( x.data(), y.data(), x.size() ) == 0 ) );
+	}
+
+	inline bool operator!=( const slice& x, const slice& y ) { return !( x == y ); }
+
+	inline int slice::compare( const slice& b ) const {
+		const size_t min_len = ( size_ < b.size_ ) ? size_ : b.size_;
+		int          r       = memcmp( data_, b.data_, min_len );
+		if ( r == 0 ) {
+			if ( size_ < b.size_ )
+				r = -1;
+			else if ( size_ > b.size_ )
+				r = +1;
+		}
+		return r;
+	}
+
+
 }// namespace simple_leveldb
 
 #endif//! STORAGE_SIMPLE_LEVELDB_INCLUDE_SLICE_H

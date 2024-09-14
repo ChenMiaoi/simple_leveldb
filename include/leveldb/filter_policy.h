@@ -13,7 +13,7 @@ namespace simple_leveldb {
 
 	public:
 		virtual const char* name() const                                                           = 0;
-		virtual void        create_filter( const slice& keys, int32_t n, core::string& dst ) const = 0;
+		virtual void        create_filter( const slice* keys, int32_t n, core::string& dst ) const = 0;
 		virtual bool        key_may_match( const slice& key, const slice& filter ) const           = 0;
 	};
 

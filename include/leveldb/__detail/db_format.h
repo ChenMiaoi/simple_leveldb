@@ -84,7 +84,7 @@ namespace simple_leveldb {
 
 	public:
 		const char* name() const override;
-		void        create_filter( const slice& keys, int32_t n, core::string& dst ) const override;
+		void        create_filter( const slice* keys, int32_t n, core::string& dst ) const override;
 		bool        key_may_match( const slice& key, const slice& filter ) const override;
 	};
 

@@ -2,16 +2,24 @@
 #include "leveldb/__detail/filename.h"
 #include "leveldb/__detail/log_reader.h"
 #include "leveldb/__detail/log_write.h"
+#include "leveldb/__detail/version_edit.h"
 #include "leveldb/__detail/version_set.h"
+#include "leveldb/env.h"
 #include "leveldb/options.h"
+#include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace simple_leveldb {
+
+	static size_t target_file_size( const options* option ) {
+		return option->max_file_size;
+	}
 
 	version::version( version_set* vset )
 			: vset_( vset )
@@ -57,6 +65,25 @@ namespace simple_leveldb {
 }// namespace simple_leveldb
 
 namespace simple_leveldb {
+
+	version_set::version_set( const core::string& dbname, const options* option,
+														table_cache* table_cache, const internal_key_comparator* cmp )
+			: env_( option->env )
+			, dbname_( dbname )
+			, options_( option )
+			, table_cache_( table_cache )
+			, icmp_( *cmp )
+			, next_file_number_( 2 )
+			, manifest_file_number_( 0 )
+			, last_sequence_( 0 )
+			, log_number_( 0 )
+			, prev_log_number_( 0 )
+			, descriptor_file_( nullptr )
+			, descriptor_log_( nullptr )
+			, dummy_versions_( this )
+			, current_( nullptr ) {
+		append_version( new version( this ) );
+	}
 
 	static double max_bytes_for_level( const options* options, int32_t level ) {
 		double result = 10. * 1048576.0;
@@ -240,7 +267,148 @@ namespace simple_leveldb {
 	}
 
 	status version_set::recover( bool* save_manifest ) {
-		struct log_reporter : public log::reader::reporter {};
+		struct log_reporter : public log::reader::reporter {
+			status* s;
+
+			void corruption( size_t bytes, const status& status ) override {
+				if ( this->s->is_ok() ) *this->s = status;
+			}
+		};
+
+		core::string current;
+		status       s = read_file_to_string( env_, current_file_name( dbname_ ), &current );
+		if ( !s.is_ok() ) {
+			return s;
+		}
+		if ( current.empty() || current[ current.size() - 1 ] != '\n' ) {
+			return status::corruption( "CURRENT file does not end with newline" );
+		}
+		current.resize( current.size() - 1 );
+
+		core::string     dscname = dbname_ + "/" + current;
+		sequential_file* file;
+		s = env_->new_sequential_file( dscname, &file );
+		if ( !s.is_ok() ) {
+			if ( s.is_not_found() ) {
+				return status::corruption( "CURRENT points to a non-existent file", s.to_string() );
+			}
+			return s;
+		}
+
+		bool     have_log_number      = false;
+		bool     have_prev_log_number = false;
+		bool     have_next_file       = false;
+		bool     have_last_sequence   = false;
+		uint64_t next_file            = 0;
+		uint64_t last_sequence        = 0;
+		uint64_t log_number           = 0;
+		uint64_t prev_log_number      = 0;
+		builder  b( this, current_ );
+		int32_t  read_records = 0;
+
+		{
+			log_reporter reporter;
+			reporter.s = &s;
+			log::reader reader( file, &reporter, true, 0 );
+
+			slice        record;
+			core::string scratch;
+			while ( reader.read_record( &record, &scratch ) && s.is_ok() ) {
+				++read_records;
+				version_edit edit;
+				s = edit.decode_from( record );
+				if ( s.is_ok() ) {
+					if ( edit.has_comparator_ && edit.comparator_ != icmp_.user_comparator()->name() ) {
+						s = status::invalid_argument(
+							edit.comparator_ + " dose not match exsisting comparator ",
+							icmp_.user_comparator()->name() );
+					}
+				}
+				if ( s.is_ok() ) {
+					b.apply( &edit );
+				}
+				if ( edit.has_log_number_ ) {
+					log_number      = edit.log_number_;
+					have_log_number = true;
+				}
+				if ( edit.has_prev_log_number_ ) {
+					prev_log_number      = edit.prev_log_number_;
+					have_prev_log_number = true;
+				}
+				if ( edit.has_next_file_number_ ) {
+					next_file      = edit.next_file_number_;
+					have_next_file = true;
+				}
+				if ( edit.has_last_sequence_ ) {
+					last_sequence      = edit.last_sequence_;
+					have_last_sequence = true;
+				}
+			}
+		}
+
+		delete file;
+		file = nullptr;
+
+		if ( s.is_ok() ) {
+			if ( !have_next_file ) {
+				s = status::corruption( "no meta-nextfile entry in descriptor" );
+			} else if ( !have_log_number ) {
+				s = status::corruption( "no meta-lognumber entry in descriptor" );
+			} else if ( !have_last_sequence ) {
+				s = status::corruption( "no last-sequence-number entry in descriptor" );
+			}
+		}
+
+		if ( !have_prev_log_number ) {
+			prev_log_number = 0;
+		}
+
+		mark_file_number_used( prev_log_number );
+		mark_file_number_used( log_number );
+
+		if ( s.is_ok() ) {
+			version* v = new version( this );
+			b.save_to( v );
+			finalize( v );
+			append_version( v );
+			manifest_file_number_ = next_file;
+			next_file_number_     = next_file + 1;
+			last_sequence_        = last_sequence;
+			log_number_           = log_number;
+			prev_log_number_      = prev_log_number;
+
+			if ( reuse_manifest( dscname, current ) ) {
+				// no need
+			} else {
+				*save_manifest = true;
+			}
+		} else {
+			core::string error = s.to_string();
+			Log( options_->info_log, "Error recovering version set with % d records : %s ",
+					 read_records, error.c_str() );
+		}
+		return s;
+	}
+
+	void version_set::add_live_files( core::set< uint64_t >* live ) {
+		for ( version* v = dummy_versions_.next_; v != &dummy_versions_; v = v->next_ ) {
+			for ( auto& files: v->files_ ) {
+				for ( auto file: files ) {
+					live->insert( file->number );
+				}
+			}
+		}
+	}
+
+	void version_set::mark_file_number_used( uint64_t number ) {
+		if ( next_file_number_ <= number ) {
+			next_file_number_ = number + 1;
+		}
+	}
+
+	bool version_set::needs_compaction() const {
+		version* v = current_;
+		return ( v->compaction_score_ >= 1 ) || ( v->file_to_compact_ != nullptr );
 	}
 
 	void version_set::finalize( version* v ) {
@@ -267,6 +435,32 @@ namespace simple_leveldb {
 		v->compaction_score_ = best_score;
 	}
 
+	status version_set::write_snap_shot( log::writer* log ) {
+		version_edit edit;
+		edit.set_comparator_name( icmp_.user_comparator()->name() );
+
+		for ( int32_t level = 0; auto cp: compact_pointer_ ) {
+			if ( !cp.empty() ) {
+				internal_key key;
+				key.decode_from( cp );
+				edit.set_compact_pointer( level, key );
+			}
+			level++;
+		}
+
+		for ( int32_t level = 0; auto& files: current_->files_ ) {
+			for ( auto file: files ) {
+				edit.add_file( level, file->number, file->file_size, file->smallest, file->largest );
+			}
+			level++;
+		}
+
+		core::string record;
+		edit.encode_to( &record );
+		return log->add_record( record );
+	}
+
+
 	void version_set::append_version( version* v ) {
 		assert( v->refs_ == 0 );
 		assert( v != current_ );
@@ -280,6 +474,36 @@ namespace simple_leveldb {
 		v->next_        = &dummy_versions_;
 		v->prev_->next_ = v;
 		v->next_->prev_ = v;
+	}
+
+	bool version_set::reuse_manifest( const core::string& dscname, const core::string& dscbase ) {
+		if ( !options_->reuse_logs ) {
+			return false;
+		}
+		file_type manifest_type;
+		uint64_t  manifest_number;
+		uint64_t  manifest_size;
+		if ( !parse_file_name( dscbase, &manifest_number, &manifest_type ) ||
+				 manifest_type != file_type::kDescriptorFile ||
+				 !env_->get_file_size( dscname, &manifest_size ).is_ok() ||
+				 manifest_size >= target_file_size( options_ ) ) {
+			return false;
+		}
+
+		assert( descriptor_file_ == nullptr );
+		assert( descriptor_log_ == nullptr );
+		status r = env_->new_appendable_file( dscname, &descriptor_file_ );
+		if ( !r.is_ok() ) {
+			Log( options_->info_log, "Reuse MANIFEST: %s\n", r.to_string().c_str() );
+			assert( descriptor_file_ != nullptr );
+			return false;
+		}
+
+		Log( options_->info_log, "Reusing MANIFEST %s\n", dscname.c_str() );
+		descriptor_log_       = new log::writer( descriptor_file_, manifest_size );
+		manifest_file_number_ = manifest_number;
+
+		return true;
 	}
 
 }// namespace simple_leveldb

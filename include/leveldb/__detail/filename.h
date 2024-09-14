@@ -31,7 +31,11 @@ namespace simple_leveldb {
 
 	core::string temp_file_name( const core::string& dbname, uint64_t number );
 
-	bool parse_file_name( core::string& filename, uint64_t* number, file_type* type );
+	core::string info_log_file_name( const core::string& dbname );
+
+	core::string old_info_log_file_name( const core::string& dbname );
+
+	bool parse_file_name( const core::string& filename, uint64_t* number, file_type* type );
 
 	status set_current_file( env* env, const core::string& dbname, uint64_t descriptor_number );
 

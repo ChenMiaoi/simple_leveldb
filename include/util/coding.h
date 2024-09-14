@@ -11,7 +11,14 @@ namespace simple_leveldb {
 	void put_fixed64( core::string* dst, uint64_t value );
 	void put_varint32( core::string* dst, uint32_t value );
 	void put_varint64( core::string* dst, uint64_t value );
-	void put_length_prefixd_slice( core::string* dst, const slice& value );
+	void put_length_prefixed_slice( core::string* dst, const slice& value );
+
+	bool        get_varint32( slice* input, uint32_t* value );
+	bool        get_varint64( slice* input, uint64_t* value );
+	const char* get_varint32ptr( const char* p, const char* limit, uint32_t* v );
+	const char* get_varint64ptr( const char* p, const char* limit, uint64_t* v );
+	const char* get_varint32ptr_fallback( const char* p, const char* limit, uint32_t* value );
+	bool        get_length_prefixed_slice( slice* input, slice* result );
 
 	void  encode_fixed32( char* dst, uint32_t value );
 	void  encode_fixed64( char* dst, uint64_t value );

@@ -9,7 +9,7 @@ int main( int, char** ) {
 	simple_leveldb::options option;
 	option.create_if_missing = true;
 
-	simple_leveldb::status status = simple_leveldb::db::open( option, "testdb", &db );
+	simple_leveldb::status status = simple_leveldb::db::Open( option, "testdb", &db );
 	if ( !status.is_ok() ) {
 		std::cerr << "Unable to open/create database" << std::endl;
 		return -1;

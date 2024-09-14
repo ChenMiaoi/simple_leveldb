@@ -102,6 +102,8 @@ namespace simple_leveldb {
 #endif
 		;
 
+	status read_file_to_string( env* env, const core::string& fname, core::string* data );
+	status read_file_to_string_sync( env* env, core::string& fname, core::string* data );
 	status write_string_to_file( env* env, const slice& data, const core::string& fname );
 	status write_string_to_file_sync( env* env, const slice& data, const core::string& fname );
 

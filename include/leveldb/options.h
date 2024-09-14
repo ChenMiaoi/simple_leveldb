@@ -1,6 +1,7 @@
 #ifndef STORAGE_SIMPEL_LEVELDB_INCLUDE_OPTIONS_H
 #define STORAGE_SIMPEL_LEVELDB_INCLUDE_OPTIONS_H
 
+#include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
@@ -43,7 +44,17 @@ namespace simple_leveldb {
 
 		logger* info_log = nullptr;
 
+		cache* block_cache = nullptr;
+
+		size_t block_size = 4 * 1024;
+
+		size_t write_buffer_size = 4 * 1024 * 1024;
+
 		int32_t max_open_files = 1000;
+
+		size_t max_file_size = 2 * 1024 * 1024;
+
+		bool reuse_logs = false;
 
 		const filter_policy* filter_policy = nullptr;
 	};
