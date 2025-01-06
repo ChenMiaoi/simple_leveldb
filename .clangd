@@ -1,0 +1,5 @@
+CompileFlags:
+  Add:
+    - -Wall        # 打开所有常规警告
+    - -Wextra      # 启用额外警告
+    - -Werror      # 将所有警告视为错误
