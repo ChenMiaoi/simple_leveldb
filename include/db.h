@@ -1,0 +1,4 @@
+#ifndef SIMPLE_LEVELDB_DB_H
+#define SIMPLE_LEVELDB_DB_H
+
+#endif//! SIMPLE_LEVELDB_DB_H

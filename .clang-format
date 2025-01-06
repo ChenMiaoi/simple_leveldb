@@ -2,7 +2,6 @@
 BasedOnStyle: LLVM
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
-#AlignConsecutiveAssignments: Consecutive
 AlignOperands: Align
 AllowAllArgumentsOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false
@@ -33,7 +32,7 @@ BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeColon
-ColumnLimit: 0
+ColumnLimit: 120
 CompactNamespaces: false
 ContinuationIndentWidth: 2
 IndentCaseLabels: true
@@ -62,7 +61,6 @@ SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: false
 SpacesInParentheses: true
 SpacesInSquareBrackets: true
-TabWidth: 2
 UseTab: ForContinuationAndIndentation
 
 AlignTrailingComments: true
