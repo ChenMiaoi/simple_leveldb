@@ -40,5 +40,7 @@ if(ENABLE_EXAMPLES_BUILD)
 endif()
 
 if(ENABLE_TESTS_BUILD)
+  include_directories(deps/googletest/googletest/include)
+  add_subdirectory(deps/googletest)
   add_subdirectory(tests)
 endif()

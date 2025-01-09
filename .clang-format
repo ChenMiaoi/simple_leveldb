@@ -12,7 +12,6 @@ AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Always
 AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: true
-AllowShortEnumsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
 BreakBeforeBraces: Custom
@@ -33,10 +32,9 @@ BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeColon
-ColumnLimit: 120
+ColumnLimit: 80
 CompactNamespaces: false
 ContinuationIndentWidth: 2
-ConstructorInitializerIndentWidth: 2
 IndentCaseLabels: true
 IndentPPDirectives: None
 IndentWidth: 2
@@ -63,8 +61,7 @@ SpacesInCStyleCastParentheses: false
 SpacesInContainerLiterals: false
 SpacesInParentheses: true
 SpacesInSquareBrackets: true
-UseTab: ForContinuationAndIndentation
-
+TabWidth: 2
 AlignTrailingComments: true
 AlignConsecutiveMacros: true
 AlignConsecutiveDeclarations: true
